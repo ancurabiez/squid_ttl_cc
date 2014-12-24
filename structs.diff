@@ -1,0 +1,19 @@
+--- home/lw/tugas/squid-2.7.STABLE9/src/structs.h	2008-09-25 09:33:37.000000000 +0700
++++ mnt/hlfs/sources/TA/squid-2.7.STABLE9a/src/structs.h	2010-04-01 23:44:31.000000000 +0700
+@@ -814,2 +814,3 @@ struct _SquidConfig {
+     external_acl *externalAclHelperList;
++	 char *client_ttl_cc;
+     enum zph_mode {
+@@ -2600,2 +2601,12 @@ struct rms {
+ 
++struct _geoip_subnet {
++   u_int32_t begin;
++   u_int32_t end;
++};
++
++struct _geoip_info {
++   geoipSubnet *subnets;
++	u_int32_t count;
++};
++
+ #endif /* SQUID_STRUCTS_H */

@@ -1,0 +1,162 @@
+--- home/lw/tugas/squid-2.7.STABLE9/src/main.c	2010-03-07 22:58:56.000000000 +0700
++++ mnt/hlfs/sources/TA/squid-2.7.STABLE9a/src/main.c	2010-04-01 23:12:01.000000000 +0700
+@@ -78,2 +78,8 @@ static int checkRunningPid(void);
+ 
++geoipSubnet *get_country_subnets(u_int16_t cc, u_int32_t *count);
++static geoipInfo *load_geoip_cc(u_int16_t cc);
++static u_int16_t check_geoip_cc(char *cc);
++static void geoipInit(void);
++static void geoipFlush(void);
++
+ #ifndef _SQUID_MSWIN_
+@@ -434,2 +440,4 @@ mainReconfigure(void)
+     externalAclInit();
++	 geoipFlush();
++	 geoipInit();
+     refreshCheckInit();
+@@ -645,2 +653,3 @@ mainInitialize(void)
+ 	writePidFile();		/* write PID file */
++	geoipInit();
+ 
+@@ -1141,2 +1150,3 @@ SquidShutdown(void *unused)
+     refererCloseLog();
++	 geoipFlush();
+ #if WIP_FWD_LOG
+@@ -1191 +1201,137 @@ SquidShutdown(void *unused)
+ }
++
++struct geoip_index {
++   u_int16_t cc;
++   u_int32_t offset;
++} __attribute__ ((packed));
++
++static geoipInfo *
++load_geoip_cc(u_int16_t cc)
++{
++   static geoipInfo *ginfo;
++   ginfo = xmalloc(sizeof(geoipInfo));
++
++   if (!ginfo)
++      return NULL;
++   if ((ginfo->subnets = get_country_subnets(cc, &ginfo->count)) != NULL)
++   	return ginfo;
++	else {
++		xfree(ginfo);
++		return NULL;
++		}
++}
++
++geoipSubnet *
++get_country_subnets(u_int16_t cc, u_int32_t *count)
++{
++   FILE *ixfd, *dbfd;
++   geoipSubnet *subnets;
++   struct geoip_index *index;
++   struct stat buf;
++  
++   size_t idxsz;
++   u_int16_t i;
++   
++   u_int16_t db_cc = 0;
++   u_int16_t db_nsubnets = 0;
++
++   if ((ixfd = fopen("/var/geoip/geoipdb.idx", "r")) == NULL) {
++      debug(33, 2) ("Client_ttl_cc: File database index tidak bisa dibuka.\n");
++		return NULL;
++	}
++     
++   stat("/var/geoip/geoipdb.idx", &buf);
++   idxsz = buf.st_size/sizeof(struct geoip_index);
++   index = (struct geoip_index *)xmalloc(buf.st_size);
++
++   fread(index, buf.st_size, 1, ixfd);
++
++   for (i = 0; i < idxsz; i++)
++      if (cc == index[i].cc)
++         break;
++   
++   if (cc != index[i].cc) {
++      debug(33, 2) ("Client_ttl_cc: Kode negara '%c%c' tidak terdapat di database\n", COUNTRY(cc));
++		xfree(index);
++		return NULL;
++	}
++
++   fclose(ixfd);
++
++   if ((dbfd = fopen("/var/geoip/geoipdb.bin", "r")) == NULL) {
++      debug(33, 2) ("Client_ttl_cc: File database tidak dapat dibuka.\n");
++		xfree(index);
++		return NULL;
++	}
++   
++   fseek(dbfd, index[i].offset, SEEK_SET);
++
++   fread(&db_cc, sizeof(u_int16_t), 1, dbfd);
++
++   if (db_cc != cc) {
++      debug(33, 2) ("Client_ttl_cc: Database kemungkinan korup, atau kemungkinan masalah lain.\n");
++		xfree(index);
++		return NULL;
++	}
++            
++   fread(&db_nsubnets, sizeof(u_int16_t), 1, dbfd);
++
++   subnets = (geoipSubnet*)xmalloc(db_nsubnets * sizeof(geoipSubnet));
++
++   if (!subnets) {
++      debug(33, 2) ("Client_ttl_cc: Memori yang tersedia tidak memadai.\n");
++		xfree(index);
++		xfree(subnets);
++		return NULL;
++	}
++   
++   fread(subnets, db_nsubnets * sizeof(geoipSubnet), 1, dbfd);
++   
++   fclose(dbfd);
++   xfree(index);
++	*count = db_nsubnets;
++	return subnets;
++}
++
++static u_int16_t 
++check_geoip_cc(char *cc)
++{
++   u_int8_t i;
++   u_int16_t cc_int16;
++
++   if (strlen(cc) != 2) /* Country must be 2 chars long according
++                                        to the ISO3166 standard */
++    debug(33, 2) ("Client_ttl_cc: Kode negara salah '%s'\n", cc);
++
++   // Verification will fail if chars aren't uppercased.
++   // Make sure they are..
++   for (i = 0; i < 2; i++)
++      if (isalnum(cc[i]) != 0)
++         cc[i] = toupper(cc[i]);
++      else
++         debug(33, 2) ("Client_ttl_cc: kode negara salah '%s'\n", cc);
++
++   cc_int16 = (cc[0]<<8) + cc[1];
++   
++   return cc_int16;
++}
++
++static void
++geoipInit(void)
++{
++	if(Config.client_ttl_cc != NULL) {
++		u_int16_t cctmp;
++
++   	if ((cctmp = check_geoip_cc(Config.client_ttl_cc)) != 0) {
++   		if ((geoip = load_geoip_cc(cctmp)) != NULL)
++				debug(33, 2) ("Client_ttl_cc: Init OK.\n");
++		}
++	}
++}
++
++static void
++geoipFlush(void)
++{
++	xfree(geoip);
++	debug(33, 2) ("Client_ttl_cc: Flush OK.\n");
++}

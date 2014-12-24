@@ -1,0 +1,61 @@
+--- home/lw/tugas/squid-2.7.STABLE9/src/client_side.c	2010-02-14 07:46:25.000000000 +0700
++++ mnt/hlfs/sources/TA/squid-2.7.STABLE9a/src/client_side.c	2010-04-02 00:32:44.000000000 +0700
+@@ -2775,5 +2775,6 @@ clientSendHeaders(void *data, HttpReply 
+     assert(http->out.offset == 0);
+-
+-    if (Config.zph_mode != ZPH_OFF) {
++	 
++	 if (Config.zph_mode != ZPH_OFF) {
+ 	int tos = 0;
++	u_int8_t change = 1; 
+ 
+@@ -2781,8 +2782,13 @@ clientSendHeaders(void *data, HttpReply 
+ 	    tos = 0;
+-	else if (Config.zph_local)
++	else if (Config.zph_local) {
+ 	    tos = Config.zph_local;
+-	else if (Config.zph_sibling && http->request->hier.code == SIBLING_HIT)		/* sibling hit */
++		 change = 0;
++	} else if (Config.zph_sibling && http->request->hier.code == SIBLING_HIT) {	/* sibling hit */
+ 	    tos = Config.zph_sibling;
+-	else if (Config.zph_parent && http->request->hier.code == PARENT_HIT)	/* parent hit */
++		 change = 0;
++	} else if (Config.zph_parent && http->request->hier.code == PARENT_HIT) {	/* parent hit */
+ 	    tos = Config.zph_parent;
++		 change = 0;
++	}
++	
+ 	if (conn->tos_priority != tos) {
+@@ -2806,3 +2812,32 @@ clientSendHeaders(void *data, HttpReply 
+ 	}
++	
++	if ((Config.client_ttl_cc != NULL) && (geoip != NULL)) {
++		int ttl = 64;
++		u_int32_t ip;
++		u_int8_t cc = 0;
++		int j;
++		request_t *rq = http->request;
++		struct in_addr addr;
++	
++		if(change) {
++			addr = GetIpFromIpcache(rq->host);
++	  		ip = ntohl(addr.s_addr);
++			
++			for (j = 0; j < geoip->count; j++) {
++        		if ((ip > geoip->subnets[j].begin) && (ip < geoip->subnets[j].end)) {
++           		cc = 1;
++					break;
++				}
++			}
++		
++			if(cc)
++				ttl = 40; /* == Config.client_tl_cc */
++			else
++				ttl = 41; /* != Config.client_tl_cc */
++			if (setsockopt(fd, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl)) < 0)
++				debug(33, 2) ("Client_ttl_cc: setsockopt error on FD %d: %s : %d\n", fd, xstrerror());
++		}
++	}
+     }
++	 
+     rep = http->reply = clientCloneReply(http, rep);

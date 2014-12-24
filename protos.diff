@@ -1,0 +1,7 @@
+--- home/lw/tugas/squid-2.7.STABLE9/src/protos.h	2010-03-07 23:00:07.000000000 +0700
++++ mnt/hlfs/sources/TA/squid-2.7.STABLE9a/src/protos.h	2010-04-01 23:21:59.000000000 +0700
+@@ -1501,2 +1501,4 @@ extern void clientStoreURLRewriteDone(vo
+ 
++/* geoip ipcache.c */
++extern struct in_addr GetIpFromIpcache(const char *name);
+ 

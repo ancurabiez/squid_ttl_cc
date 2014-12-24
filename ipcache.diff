@@ -1,0 +1,36 @@
+--- home/lw/tugas/squid-2.7.STABLE9/src/ipcache.c	2007-10-13 07:01:38.000000000 +0700
++++ mnt/hlfs/sources/TA/squid-2.7.STABLE9a/src/ipcache.c	2012-06-21 17:06:03.000000000 +0700
+@@ -864 +864,33 @@ snmp_netIpFn(variable_list * Var, snint 
+ #endif /*SQUID_SNMP */
++
++struct in_addr
++GetIpFromIpcache(const char *name)
++{
++    ipcache_entry *i;
++    unsigned char k;
++	 ipcache_addrs *ia;
++	 struct in_addr addr;
++    assert(name);
++	 
++	// cek apa name ip address
++	if((ia = ipcacheCheckNumeric(name))) {
++		return ia->in_addrs[0];
++	}
++
++	
++	i = ipcache_get(name);
++   if ((i == NULL) || (i->flags.negcached)) {
++	    addr.s_addr = 0;
++		 return addr;
++	}
++
++	ia = &i->addrs;
++   for (k = 0; k < ia->count; k++) {
++	    if (++ia->cur == ia->count)
++	       ia->cur = 0;
++	    if (!ia->bad_mask[ia->cur])
++	       break;
++    }
++	 
++  return ia->in_addrs[ia->cur];
++}

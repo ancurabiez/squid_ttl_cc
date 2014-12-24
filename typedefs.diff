@@ -1,0 +1,9 @@
+--- home/lw/tugas/squid-2.7.STABLE9/src/typedefs.h	2010-02-13 03:22:18.000000000 +0700
++++ mnt/hlfs/sources/TA/squid-2.7.STABLE9a/src/typedefs.h	2010-04-01 23:15:52.000000000 +0700
+@@ -411,2 +411,6 @@ typedef void REFRESHCHECK(void *data, in
+ typedef struct _refresh_check_helper refresh_check_helper;
++
++typedef struct _geoip_subnet geoipSubnet;
++typedef struct _geoip_info geoipInfo;
++
+ #endif /* SQUID_TYPEDEFS_H */

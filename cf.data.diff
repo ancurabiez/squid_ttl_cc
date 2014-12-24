@@ -1,0 +1,19 @@
+--- home/lw/tugas/squid-2.7.STABLE9/src/cf.data.pre	2009-11-10 05:38:57.000000000 +0700
++++ mnt/hlfs/sources/TA/squid-2.7.STABLE9a/src/cf.data.pre	2010-04-02 00:45:40.000000000 +0700
+@@ -1440,2 +1440,16 @@ DOC_END
+ 
++NAME: client_ttl_cc
++TYPE: string
++DEFAULT: none
++LOC: Config.client_ttl_cc
++DOC_START
++	Memungkinkan anda untuk menandai paket menuju client berdasarkan kode negara (jika MISS).
++	Opsi ini berhubungan dengan zph.
++	TTL 40: client_ttl_cc == cc
++	TTL 41: client_ttl_cc != cc 
++	Misalnya: 	ID Indonesia
++					MY Malaysia
++					AU Australia
++DOC_END
++
+ COMMENT_START

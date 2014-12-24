@@ -1,0 +1,6 @@
+--- home/lw/tugas/squid-2.7.STABLE9/src/globals.h	2007-09-24 20:28:48.000000000 +0700
++++ mnt/hlfs/sources/TA/squid-2.7.STABLE9a/src/globals.h	2010-04-01 23:14:51.000000000 +0700
+@@ -115,2 +115,3 @@ extern struct timeval current_time;
+ extern struct timeval squid_start;
++extern geoipInfo *geoip;
+ extern time_t squid_curtime;	/* 0 */
